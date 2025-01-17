@@ -1,0 +1,142 @@
+#include <WiFi.h>
+#include <Web3.h>
+// capital Web3.h as well as Trezor.h
+#include <Util.h>
+#include <Contract.h>
+#include "secrets.h"
+#include <iostream>
+
+int wificounter = 0;
+Web3 *web3;
+
+void setup_wifi();
+void callContract(const char *destination); 
+
+void setup() {
+    Serial.begin(115200);
+
+    /* in nodes.h 
+    add:
+    #define SEPOLIA_INF_RPC_URL "sepolia.infura.io/v3/" 
+    
+    change: 
+    case SEPOLIA_ID:
+        // return SEPOLIA_URL;
+        return SEPOLIA_INF_RPC_URL;
+
+    in certificates.h
+    
+    change:
+        case SEPOLIA_ID:
+        // return sepolia_cert;
+        return infura_ca_cert;    
+    */
+
+    web3 = new Web3(SEPOLIA_ID);
+
+    setup_wifi();
+
+    callContract(CONTRACTADDRESS);
+ 
+}
+
+void callContract(const char *contractAddr)
+{
+	//obtain a contract object, for just sending eth doesn't need a contract address
+  string contractAddrStr = contractAddr;
+	Contract contract(web3, contractAddr);
+	contract.SetPrivateKey(PRIVATE_KEY);
+	unsigned long long gasPriceVal = 22000000000ULL;
+	uint32_t  gasLimitVal = 90000;
+
+	Serial.print("Get Nonce: ");
+    string address = MY_ADDRESS;
+	uint32_t nonceVal = (uint32_t)web3->EthGetTransactionCount(&address);
+	Serial.println(nonceVal);
+
+  uint256_t callValue = 0;
+  //uint8_t dataStr[100];
+  //memset(dataStr, 0, 100);
+  //string p = contract.SetupContractData((char*)dataStr, "send_data(uint,uint)", 18, 31);
+  //string p = contract.SetupContractData("send_data(uint,uint)", 18, 31);
+  // method 0xf89f0dfd <--  send_data(uint, uint) 
+  // 0000000000000000000000000000000000000000000000000000000000000015 in HEX
+  // 0000000000000000000000000000000000000000000000000000000000000021 in HEX
+  string method = "0xf89f0dfd";
+  int temp = 24;
+  char hex_temp[64];
+  sprintf(hex_temp, "%064X", temp);
+  string temp_string = hex_temp;
+  int hum = 45;
+  char hex_hum[64];
+  sprintf(hex_hum, "%064X", hum);
+  string hum_string = hex_hum;
+  string p = method+temp_string+hum_string;   
+  //string p = "0xf89f0dfd00000000000000000000000000000000000000000000000000000000000000150000000000000000000000000000000000000000000000000000000000000021";
+// send transaction
+
+string result = contract.SendTransaction(nonceVal, gasPriceVal, gasLimitVal, &contractAddrStr, &callValue, &p);
+Serial.println(result.c_str());
+  string transactionHash = web3->getResult(&result);
+
+Serial.println("TX on Etherscan:");
+  Serial.print(ETHERSCAN_TX);
+  Serial.print("/0x");
+  Serial.println(transactionHash.c_str()); 
+
+}
+
+
+
+void loop() {
+
+}
+
+
+/* This routine is specifically geared for ESP32 perculiarities */
+/* You may need to change the code as required */
+/* It should work on 8266 as well */
+void setup_wifi()
+{
+    if (WiFi.status() == WL_CONNECTED)
+    {
+        return;
+    }
+
+    Serial.println();
+    Serial.print("Connecting to ");
+    Serial.println(ssid);
+
+    if (WiFi.status() != WL_CONNECTED)
+    {
+        WiFi.persistent(false);
+        WiFi.mode(WIFI_OFF);
+        WiFi.mode(WIFI_STA);
+
+        WiFi.begin(ssid, password);
+    }
+
+    wificounter = 0;
+    while (WiFi.status() != WL_CONNECTED && wificounter < 10)
+    {
+        for (int i = 0; i < 500; i++)
+        {
+            delay(1);
+        }
+        Serial.print(".");
+        wificounter++;
+    }
+
+    if (wificounter >= 10)
+    {
+        Serial.println("Restarting ...");
+        ESP.restart(); //targetting 8266 & Esp32 - you may need to replace this
+    }
+
+    delay(10);
+
+    Serial.println("");
+    Serial.println("WiFi connected.");
+    Serial.println("IP address: ");
+    Serial.println(WiFi.localIP());
+}

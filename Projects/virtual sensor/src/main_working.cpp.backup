@@ -1,0 +1,80 @@
+//#include <Arduino.h>
+#include "arduinoFFT.h"
+
+// Define the DAC and ADC pins
+const int dacPin = 25;   // DAC1 (GPIO 25) for sinusoid output
+const int adcPin = 34;   // ADC1 (GPIO 34) for reading the sinusoid
+
+// Parameters for the sine wave
+const int amplitude = 100;   // Amplitude of the sine wave (max 255 for 8-bit DAC)
+const int offset = 128;      // DC offset (middle of the DAC range)
+const float signalFrequency = 5.0;  // Frequency of the sine wave in Hz
+const int sampleRate = 1000;  // Sample
+int samplingFrequencyADC = 1000; // sampling theorem should be at least 2*frequency
+
+
+// Task Handles
+TaskHandle_t dacTaskHandle = NULL;
+TaskHandle_t adcTaskHandle = NULL;
+
+// DAC task function
+void dacTask(void *parameter) {
+ 
+  
+  // Generate and output the sine wave on DAC
+  while (true)  {
+    for (int i = 0; i < sampleRate; i++) {
+      int sineValue = (int)(amplitude * sin(2.0 * PI * signalFrequency * i / sampleRate) + offset);
+      dacWrite(dacPin, sineValue);  // Write to DAC (8-bit value)
+      Serial.print(">");
+      Serial.print("dac:");    
+      Serial.println(sineValue);   
+
+      // portTICK_PERIOD_MS is the number of ticks per ms
+      // vTaskDelay Delay a task for a given number of ticks.
+      vTaskDelay(1.0/sampleRate*1000 * portTICK_PERIOD_MS); 
+    }
+  }
+}
+
+void adcTask(void *parameter) {
+  
+  while (true) {
+
+  int adcValue = analogRead(adcPin);  // Read the ADC value
+
+  Serial.print(">");
+  Serial.print("adc:");    
+  Serial.println(adcValue);   
+
+  // portTICK_PERIOD_MS is the number of ticks per ms
+  // vTaskDelay Delay a task for a given number of ticks.
+  vTaskDelay(1.0/samplingFrequencyADC*1000 * portTICK_PERIOD_MS); 
+
+  }
+
+}
+
+void setup() {
+  Serial.begin(115200);
+
+  // Initialize DAC pin (GPIO 25)
+  dacWrite(dacPin, 0);  // Initialize DAC with a low value
+
+  // Initialize ADC pin (GPIO 34)
+  analogReadResolution(10);  // Set ADC resolution to 12 bits
+  analogSetAttenuation(ADC_11db);  // Set ADC attenuation (default 0dB)
+
+  // Create DAC task
+  //xTaskCreate(dacTask, "DAC Task", 2048, NULL, 1, &dacTaskHandle);
+  xTaskCreatePinnedToCore(dacTask, "DAC Task", 2048, NULL, 1, &dacTaskHandle,0);
+
+
+  // Create ADC task
+  //xTaskCreate(adcTask, "ADC Task", 2048, NULL, 1, &adcTaskHandle);
+  xTaskCreatePinnedToCore(adcTask, "ADC Task", 2048, NULL, 1, &adcTaskHandle,1);
+}
+
+void loop() {
+  // Empty loop, as tasks handle everything
+}

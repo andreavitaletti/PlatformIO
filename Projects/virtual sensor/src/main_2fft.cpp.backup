@@ -1,0 +1,182 @@
+//#include <Arduino.h>
+#include "arduinoFFT.h"
+//#include "filter_lib.h"
+
+// Define the DAC and ADC pins
+const int dacPin = 25;   // DAC1 (GPIO 25) for sinusoid output
+const int adcPin = 34;   // ADC1 (GPIO 34) for reading the sinusoid
+
+// Parameters for the sine wave
+const int amplitude = 100;   // Amplitude of the sine wave (max 255 for 8-bit DAC)
+const int offset = 128;      // DC offset (middle of the DAC range)
+const float signalFrequency = 50.0;  // Frequency of the sine wave in Hz
+const float signalFrequency = 50.0;  // Frequency of the sine wave in Hz
+const int samplingFrequencyDAC = 1000;  // Sample
+int samplingFrequencyADC = 1000; // sampling theorem should be at least 2*frequency
+const uint16_t samples = 512; 
+
+// create filter with 2 Hz cut-off frequency
+//lowpass_filter lowpassFilter(30); 
+
+#define SCL_INDEX 0x00
+#define SCL_TIME 0x01
+#define SCL_FREQUENCY 0x02
+#define SCL_PLOT 0x03
+
+// Task Handles
+TaskHandle_t dacTaskHandle = NULL;
+TaskHandle_t adcTaskHandle = NULL;
+
+/*
+These are the input and output vectors
+Input vectors receive computed results from FFT
+*/
+double vReal[samples];
+double vImag[samples];
+double vRealDAC[samples];
+double vImagDAC[samples];
+
+/* Create FFT object */
+ArduinoFFT<double> FFTDAC = ArduinoFFT<double>(vRealDAC, vImagDAC, samples, samplingFrequencyDAC);
+ArduinoFFT<double> FFTADC = ArduinoFFT<double>(vReal, vImag, samples, samplingFrequencyADC);
+
+
+void PrintVector(double *vData, uint16_t bufferSize, uint8_t scaleType)
+{
+  for (uint16_t i = 0; i < bufferSize; i++)
+  {
+    double abscissa;
+    /* Print abscissa value */
+    switch (scaleType)
+    {
+      case SCL_INDEX:
+        abscissa = (i * 1.0);
+	break;
+      case SCL_TIME:
+        abscissa = ((i * 1.0) / samplingFrequencyADC);
+	break;
+      case SCL_FREQUENCY:
+        abscissa = ((i * 1.0 * samplingFrequencyADC) / samples);
+	break;
+    }
+    Serial.print(abscissa, 6);
+    if(scaleType==SCL_FREQUENCY)
+      Serial.print("Hz");
+    Serial.print(" ");
+    Serial.println(vData[i], 4);
+  }
+  Serial.println();
+}
+
+
+// DAC task function
+void dacTask(void *parameter) {
+ 
+  
+  // Generate and output the sine wave on DAC
+  while (true)  {
+    int j=0;
+    for (int i = 0; i < samplingFrequencyDAC; i++) {
+      int sineValue = (int)(amplitude * sin(2.0 * PI * signalFrequency * i / samplingFrequencyDAC) + offset);
+      dacWrite(dacPin, sineValue);  // Write to DAC (8-bit value)
+      /*
+      Serial.print(">");
+      Serial.print("dac:");    
+      Serial.println(sineValue);   
+      */
+      if (j<samples){
+        vRealDAC[j] = sineValue-offset;
+        vImagDAC[j] = 0.0;
+        j=j+1;
+      }
+      if (j==samples){
+          j=0;
+          FFTDAC.windowing(FFTWindow::Hamming, FFTDirection::Forward);	
+          FFTDAC.compute(FFTDirection::Forward); 
+          FFTDAC.complexToMagnitude();
+          double x = FFTDAC.majorPeak();
+          Serial.print("DAC FFT: ");
+          Serial.println(x, 6);
+      }
+      // portTICK_PERIOD_MS is the number of ticks per ms
+      // vTaskDelay Delay a task for a given number of ticks.
+      vTaskDelay(1.0/samplingFrequencyDAC*1000 * portTICK_PERIOD_MS); 
+    }
+  }
+}
+
+void adcTask(void *parameter) {
+  
+  int i = 0;
+
+  while (true) {
+
+  int adcValue = analogRead(adcPin);  // Read the ADC value
+  /*
+  Serial.print(">");
+  Serial.print("adc:");    
+  Serial.println(adcValue);   
+  */
+
+  if (i<samples){
+       //vReal[i] = lowpassFilter.filter(adcValue-512);
+       vReal[i] = adcValue-512;
+       vImag[i] = 0.0;
+       i=i+1;
+  }
+
+  if (i==samples){
+    i=0;
+    FFTADC.windowing(FFTWindow::Hamming, FFTDirection::Forward);	
+    FFTADC.compute(FFTDirection::Forward); 
+    FFTADC.complexToMagnitude();
+    double x = FFTADC.majorPeak();
+    Serial.print("ADC FFT: ");
+    Serial.println(x, 6);
+
+     /*
+      Serial.println("Data:");
+ 
+      PrintVector(vReal, samples, SCL_TIME);
+      FFT.windowing(FFTWindow::Hamming, FFTDirection::Forward);	
+      Serial.println("Weighed data:");
+      PrintVector(vReal, samples, SCL_TIME);
+      FFT.compute(FFTDirection::Forward); 
+      Serial.println("Computed Real values:");
+      PrintVector(vReal, samples, SCL_INDEX);
+      Serial.println("Computed Imaginary values:");
+      PrintVector(vImag, samples, SCL_INDEX);
+      FFT.complexToMagnitude();
+      Serial.println("Computed magnitudes:");
+      PrintVector(vReal, (samples >> 1), SCL_FREQUENCY);
+      double x = FFT.majorPeak();
+      Serial.println(x, 6);
+      while(1);  */
+      // delay(2000); /* Repeat after delay */
+  }
+
+  // portTICK_PERIOD_MS is the number of ticks per ms
+  // vTaskDelay Delay a task for a given number of ticks.
+  vTaskDelay(1.0/samplingFrequencyADC*1000 * portTICK_PERIOD_MS); 
+
+  }
+
+}
+
+void setup() {
+  Serial.begin(115200);
+
+  // Initialize DAC pin (GPIO 25)
+  dacWrite(dacPin, 0);  // Initialize DAC with a low value
+
+  // Initialize ADC pin (GPIO 34)
+  analogReadResolution(10);  // Set ADC resolution to 12 bits
+  analogSetAttenuation(ADC_11db);  // Set ADC attenuation (default 0dB)
+  xTaskCreatePinnedToCore(dacTask, "DAC Task", 2048, NULL, 1, &dacTaskHandle,0);
+
+  xTaskCreatePinnedToCore(adcTask, "ADC Task", 2048, NULL, 1, &adcTaskHandle,1);
+}
+
+void loop() {
+  // Empty loop, as tasks handle everything
+}
