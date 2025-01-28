@@ -8,8 +8,8 @@
  *  Go to your TTN console register a device then the copy fields
  *  and replace the CHANGE_ME strings below
  ****************************************************************************/
-const char* devEui = DEVEUI; // Change to TTN Device EUI
 const char* appEui = APPEUI; // Change to TTN Application EUI
+const char* devEui = DEVEUI; // Change to TTN Device EUI
 const char* appKey = APPKEY; // Chaneg to TTN Application Key
 
 TTN_esp32 ttn ;
