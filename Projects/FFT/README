@@ -1,0 +1,3 @@
+pio run -t upload -e espwroom32
+
+platformio device monitor -b 115200
