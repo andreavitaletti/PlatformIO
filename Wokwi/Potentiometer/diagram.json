@@ -1,0 +1,18 @@
+{
+  "version": 1,
+  "author": "Johann Li",
+  "editor": "wokwi",
+  "parts": [
+    { "type": "wokwi-esp32-devkit-v1", "id": "esp", "top": -192.67, "left": -23.33, "attrs": {} },
+    { "type": "wokwi-potentiometer", "id": "pot1", "top": -156.77, "left": -121.8, "attrs": {} }
+  ],
+  "connections": [
+    [ "esp:TX0", "$serialMonitor:RX", "", [] ],
+    [ "esp:RX0", "$serialMonitor:TX", "", [] ],
+    [ "esp:D12", "pot1:SIG", "green", [ "h0" ] ],
+    [ "pot1:VCC", "esp:3V3", "red", [ "v129.84", "h184.47", "v-75.74" ] ],
+    [ "pot1:GND", "esp:GND.1", "black", [ "v117.84", "h189.8", "v-73.24" ] ]
+  ],
+  "serialMonitor": { "display": "terminal" },
+  "dependencies": {}
+}

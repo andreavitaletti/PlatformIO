@@ -1,0 +1,7 @@
+[wokwi]
+version = 1
+#elf = ".pio/build/potentiometer_cpp/firmware.elf"
+#firmware = ".pio/build/potentiometer_cpp/firmware.bin"
+elf = ".pio/build/potentiometer_ino/firmware.elf"
+firmware = ".pio/build/potentiometer_ino/firmware.bin"
+
