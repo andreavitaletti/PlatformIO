@@ -53,6 +53,13 @@ void TaskReadADC(void *pvParameters) {
     xQueueSend(adcQueue, &val, 0);
     
     // Non-blocking delay (ticks to wait)
+    /* 
+    FreeRTOS doesn't measure time in seconds. It uses a "heartbeat" called a Tick.
+    The frequency of these clicks is defined in your configuration (usually 1000Hz on ESP32, meaning 1 tick = 1ms).
+    If you write vTaskDelay(500), you aren't telling the ESP32 to wait 500ms; you are telling it to wait 500 Ticks.
+    The constant portTICK_PERIOD_MS is a convenience macro that converts Ticks into milliseconds.
+    So, 500 / portTICK_PERIOD_MS is the correct way to say "wait 500 milliseconds" in FreeRTOS.
+    */
     vTaskDelay(500 / portTICK_PERIOD_MS); 
   }
 }
