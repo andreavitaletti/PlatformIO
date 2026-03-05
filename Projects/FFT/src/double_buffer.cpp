@@ -19,66 +19,69 @@ volatile bool bufferReady = false;
 SemaphoreHandle_t xSemaphore = NULL;
 TaskHandle_t FFTTaskHandle = NULL;
 
-// 2. Optimized Sampling Task
+// Add a second semaphore for the handshake
+SemaphoreHandle_t xFFTFinished = NULL;
+
 void TaskSample(void *pvParameters) {
   int64_t next_waketime = esp_timer_get_time();
-  const int64_t interval = 1000000 / SAMPLING_FREQUENCY; // in microseconds
+  const int64_t interval = 1000000 / SAMPLING_FREQUENCY;
   int sampleIdx = 0;
 
   while (1) {
-    // Generate synthetic signal
     float t = (float)sampleIdx / (float)SAMPLING_FREQUENCY;
-    fillReal[sampleIdx] = 50.0 * sin(2.0 * M_PI * TARGET_FREQ * t);
+    fillReal[sampleIdx] = 50.0 * sin(2.0 * M_PI * TARGET_FREQ * t) + 20.0 * sin(2.0 * M_PI * (2*TARGET_FREQ) * t);
     fillImag[sampleIdx] = 0;
     sampleIdx++;
 
     if (sampleIdx >= SAMPLES) {
-      // Swap pointers safely
-      double *tempReal = fillReal;
-      double *tempImag = fillImag;
-      
-      fillReal = procReal;
-      fillImag = procImag;
-      
-      procReal = tempReal;
-      procImag = tempImag;
+      // --- THE HANDSHAKE ---
+      // Wait for FFT task to confirm it is finished with procReal/procImag
+      // If the FFT is slow, the Sampler will pause here briefly
+      if (xFFTFinished != NULL) {
+        xSemaphoreTake(xFFTFinished, portMAX_DELAY);
+      }
+
+      double *tempReal = fillReal; double *tempImag = fillImag;
+      fillReal = procReal; fillImag = procImag;
+      procReal = tempReal; procImag = tempImag;
 
       sampleIdx = 0;
-      // Signal the FFT task
-      xSemaphoreGive(xSemaphore);
+      xSemaphoreGive(xSemaphore); // Tell FFT: "Data is ready"
     }
 
-    // High precision microsecond delay
     next_waketime += interval;
     int64_t sleep_time = next_waketime - esp_timer_get_time();
-    if (sleep_time > 0) {
-      delayMicroseconds(sleep_time);
-    }
-    
-    // Periodically allow the IDLE task to reset the Watchdog
-    if (sampleIdx % 32 == 0) {
-      vTaskDelay(1); 
-    }
+    if (sleep_time > 0) delayMicroseconds(sleep_time);
+    if (sampleIdx % 32 == 0) vTaskDelay(1); 
   }
 }
 
-// 3. Optimized FFT Task
 void TaskFFT(void *pvParameters) {
-  // Initialize FFT object once
-  ArduinoFFT<double> FFT = ArduinoFFT<double>(vReal0, vImag0, SAMPLES, SAMPLING_FREQUENCY);
-
   while (1) {
-    // Wait for the semaphore
     if (xSemaphoreTake(xSemaphore, portMAX_DELAY) == pdTRUE) {
-      // Point the FFT to the buffer we just filled
-      // Note: We use the pointer 'procReal' which was swapped in TaskSample
-      FFT = ArduinoFFT<double>(procReal, procImag, SAMPLES, SAMPLING_FREQUENCY);
+      // Re-link the library to the newly swapped proc pointers
+      ArduinoFFT<double> FFT = ArduinoFFT<double>(procReal, procImag, SAMPLES, SAMPLING_FREQUENCY);
 
       FFT.windowing(FFT_WIN_TYP_HAMMING, FFT_FORWARD);
       FFT.compute(FFT_FORWARD);
       FFT.complexToMagnitude();
 
-      Serial.printf("Peak: %.2f Hz\n", FFT.majorPeak());
+      // Find Max Frequency (Shannon check)
+      double threshold = 500.0; // Scaled: Peak * (SAMPLES/something)
+      int topBin = 0;
+      for (int i = (SAMPLES / 2) - 1; i >= 0; i--) {
+        if (procReal[i] > threshold) {
+          topBin = i;
+          break; 
+        }
+      }
+
+      double f_max = (topBin * SAMPLING_FREQUENCY) / (double)SAMPLES;
+      Serial.printf("Detected Max Freq: %.2f Hz | New Suggested Fs: %.2f Hz\n", f_max, f_max * 2.5);
+
+      // --- THE HANDSHAKE ---
+      // Tell the Sampler: "I am done printing, you can have the buffer back"
+      xSemaphoreGive(xFFTFinished);
     }
   }
 }
@@ -86,11 +89,12 @@ void TaskFFT(void *pvParameters) {
 void setup() {
   Serial.begin(115200);
   xSemaphore = xSemaphoreCreateBinary();
-
-  // Core 1: Sampling (High Priority)
-  xTaskCreatePinnedToCore(TaskSample, "Sampler", 4096, NULL, 5, NULL, 1);
+  xFFTFinished = xSemaphoreCreateBinary();
   
-  // Core 0: FFT (Lower Priority, Huge Stack for Math)
+  // Initially, the FFT is "finished" so the Sampler can do the first swap
+  xSemaphoreGive(xFFTFinished); 
+
+  xTaskCreatePinnedToCore(TaskSample, "Sampler", 4096, NULL, 5, NULL, 1);
   xTaskCreatePinnedToCore(TaskFFT, "FFT_Task", 10000, NULL, 1, &FFTTaskHandle, 0);
 }
 

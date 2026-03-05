@@ -2,7 +2,7 @@
 
 #define SAMPLES 1024
 #define SAMPLING_FREQUENCY 500
-#define TARGET_FREQ 5 // smal frequency to allow the simulator to work properly
+#define TARGET_FREQ 1 // smal frequency to allow the simulator to work properly
 
 
 // 1. Static allocation (prevents Stack Overflow)

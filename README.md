@@ -14,3 +14,15 @@ pio run -t upload -e espwroom32
 platformio device monitor -b 115200
 
 ```
+
+```
+# To just compile
+pio run -e potentiometer_cpp
+
+# To compile and upload immediately
+pio run -e potentiometer_cpp --target upload
+
+# To compile, upload, and start the serial monitor
+pio run -e potentiometer_cpp --target upload --target monitor
+
+```
