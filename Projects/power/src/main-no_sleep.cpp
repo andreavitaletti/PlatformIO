@@ -8,7 +8,7 @@
 
 
 #define Time_To_Sleep 5   //Time ESP32 will go to sleep (in seconds)
-#define S_To_mS_Factor 1000ULL      //Conversion factor for milli seconds to seconds 
+#define S_To_mS_Factor 1000ULL      //Conversion factor for milli seconds to seconds
 
 const char* mqttServer = "test.mosquitto.org";
 int port = 1883;
@@ -34,7 +34,7 @@ void setup() {
   Serial.begin(115200);
   delay(1000); //Take some time to open up the Serial Monitor
   setup_wifi();
-  
+
   client.setServer(mqttServer, port);
   client.setCallback(callback);
 
@@ -52,7 +52,7 @@ void loop() {
     lastMsg = now;
     /*
     SENSE
-    e.g. val = analogRead(potPin); 
+    e.g. val = analogRead(potPin);
     */
     val = random(4000);
     snprintf (msg, MSG_BUFFER_SIZE, "%ld", val);
@@ -72,7 +72,7 @@ void setup_wifi()
 
     Serial.println();
     Serial.print("Connecting to ");
-    Serial.println(ssid);
+    Serial.println(WIFI_SSID);
 
     if (WiFi.status() != WL_CONNECTED)
     {
@@ -80,7 +80,7 @@ void setup_wifi()
         WiFi.mode(WIFI_OFF);
         WiFi.mode(WIFI_STA);
 
-        WiFi.begin(ssid, password);
+        WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
     }
 
     wificounter = 0;
@@ -133,7 +133,7 @@ void callback(char* topic, byte* message, unsigned int length) {
   Serial.print(topic);
   Serial.print(". Message: ");
   String stMessage;
-  
+
   for (int i = 0; i < length; i++) {
     Serial.print((char)message[i]);
     stMessage += (char)message[i];

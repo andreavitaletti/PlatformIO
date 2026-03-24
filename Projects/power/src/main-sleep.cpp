@@ -5,13 +5,13 @@
 /*
   ESP32 Deep Sleep Mode Timer Wake UP
  http:://www.electronicwings.com
-*/ 
+*/
 // mosquitto_pub -h test.mosquitto.org -t "avitaletti/feeds/threshold" -m 2345
 // mosquitto_sub -h test.mosquitto.org -t "avitaletti/feeds/potentiometer"
 
 
 #define Time_To_Sleep 5   //Time ESP32 will go to sleep (in seconds)
-#define S_To_uS_Factor 1000000ULL      //Conversion factor for micro seconds to seconds 
+#define S_To_uS_Factor 1000000ULL      //Conversion factor for micro seconds to seconds
 
 RTC_DATA_ATTR int bootCount= 0;
 
@@ -44,7 +44,7 @@ void setup() {
   Serial.println("Boot number: " + String(bootCount));
 
   setup_wifi();
-  
+
   client.setServer(mqttServer, port);
   client.setCallback(callback);
 
@@ -56,7 +56,7 @@ void setup() {
 
    /*
     SENSE
-    e.g. val = analogRead(potPin); 
+    e.g. val = analogRead(potPin);
     */
     val = random(4000);
     snprintf (msg, MSG_BUFFER_SIZE, "%ld", val);
@@ -72,7 +72,7 @@ void setup() {
 
   //Go to sleep now
   esp_deep_sleep_start();
- 
+
   Serial.println("This will not print!!"); // This will not get print,as ESP32 goes in Sleep mode.
 }
 
@@ -88,7 +88,7 @@ void setup_wifi()
 
     Serial.println();
     Serial.print("Connecting to ");
-    Serial.println(ssid);
+    Serial.println(WIFI_SSID);
 
     if (WiFi.status() != WL_CONNECTED)
     {
@@ -96,7 +96,7 @@ void setup_wifi()
         WiFi.mode(WIFI_OFF);
         WiFi.mode(WIFI_STA);
 
-        WiFi.begin(ssid, password);
+        WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
     }
 
     wificounter = 0;
@@ -150,7 +150,7 @@ void callback(char* topic, byte* message, unsigned int length) {
   Serial.print(topic);
   Serial.print(". Message: ");
   String stMessage;
-  
+
   for (int i = 0; i < length; i++) {
     Serial.print((char)message[i]);
     stMessage += (char)message[i];
