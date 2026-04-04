@@ -1,0 +1,21 @@
+# To upload the firmware
+
+`pio run -e dumping -t upload`
+
+# To list the devices
+
+`pio device list`
+
+# To dump the firmware
+
+NOTE: it takes time
+
+`python -m esptool --chip esp32 --port /dev/ttyUSB0 --baud 115200 read_flash 0 0x400000 firmware_dump.bin'
+
+On Platfotmio
+
+`pio pkg exec -p "tool-esptoolpy" -- esptool.py --chip esp32 --port /dev/ttyUSB0 --baud 115200 read_flash 0 0x400000 firmware_dump.bin`
+
+# To read the SECRET
+
+strings firmware_dump.bin | grep "SECRET_"
