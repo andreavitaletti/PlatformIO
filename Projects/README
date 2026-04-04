@@ -1,0 +1,5 @@
+pio run -t upload -e espwroom32
+
+platformio device monitor -b 115200
+
+you can use the Better Serial Plotter https://hackaday.io/project/181686-better-serial-plotter to plot the data acquired by the ADC
