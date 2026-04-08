@@ -68,31 +68,35 @@ void TaskDownload(void *pvParameters) {
         if (http.begin(*client, dataUrl)) {
           int httpCode = http.GET();
           if (httpCode == HTTP_CODE_OK) {
-            // Get content stream
-            WiFiClient * stream = http.getStreamPtr();
+            String payload = http.getString();
             
             int sampleIdx = 0;
-            String currentVal = "";
+            int startIdx = 0;
+            int payloadLen = payload.length();
 
-            while (http.connected() && stream->available() && sampleIdx < SAMPLES) {
-              char c = stream->read();
-              // Parse out numbers separated by newline or comma
-              if (c == '\n' || c == '\r' || c == ',') {
-                if (currentVal.length() > 0) {
-                  fillReal[sampleIdx] = currentVal.toDouble();
-                  fillImag[sampleIdx] = 0;
-                  sampleIdx++;
-                  currentVal = "";
+            while (startIdx < payloadLen && sampleIdx < SAMPLES) {
+                // Find next separator
+                int nextSep = -1;
+                for (int i = startIdx; i < payloadLen; i++) {
+                    char c = payload.charAt(i);
+                    if (c == '\n' || c == '\r' || c == ',') {
+                        nextSep = i;
+                        break;
+                    }
                 }
-              } else if (isAscii(c) && !isSpace(c)) { 
-                currentVal += c;
-              }
-            }
-            // Handle last value if missing trailing delimiter
-            if (currentVal.length() > 0 && sampleIdx < SAMPLES) {
-              fillReal[sampleIdx] = currentVal.toDouble();
-              fillImag[sampleIdx] = 0;
-              sampleIdx++;
+                
+                if (nextSep == -1) nextSep = payloadLen;
+
+                if (nextSep > startIdx) {
+                    String valStr = payload.substring(startIdx, nextSep);
+                    valStr.trim();
+                    if (valStr.length() > 0) {
+                        fillReal[sampleIdx] = valStr.toDouble();
+                        fillImag[sampleIdx] = 0;
+                        sampleIdx++;
+                    }
+                }
+                startIdx = nextSep + 1;
             }
 
             Serial.printf("Downloaded %d samples\n", sampleIdx);
