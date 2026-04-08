@@ -9,7 +9,7 @@ def generate_data():
     for i in range(SAMPLES):
         t = i / SAMPLING_FREQUENCY
         # Simulating the same signal from the original C++ code
-        val = 50.0 * math.sin(2.0 * math.pi * TARGET_FREQ * t) + 20.0 * math.sin(2.0 * math.pi * (2 * TARGET_FREQ) * t)
+        val = 50.0 * math.sin(2.0 * math.pi * TARGET_FREQ * t) + 20.0 * math.sin(2.0 * math.pi * (2.7 * TARGET_FREQ) * t)
         data.append(f"{val:.6f}")
     
     with open("buffer_data.txt", "w") as f:

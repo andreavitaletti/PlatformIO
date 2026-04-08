@@ -14,7 +14,7 @@
 
 // Raw URL to the data gerenreated by generate_github_data.py 
 // e.g. https://raw.githubusercontent.com/user/repo/main/buffer_data.txt
-const char* dataUrl = "https://raw.githubusercontent.com/YOUR_USER/YOUR_REPO/main/buffer_data.txt";
+const char* dataUrl = "https://raw.githubusercontent.com/andreavitaletti/PlatformIO/refs/heads/main/Projects/FFT/buffer_data.txt";
 
 // 1. Static allocation (prevents Stack Overflow)
 double vReal0[SAMPLES], vImag0[SAMPLES];
