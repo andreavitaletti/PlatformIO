@@ -1,0 +1,441 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>CSS Sensor Gateway</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Syne:wght@400;700;800&display=swap');
+
+  :root {
+    --bg:       #0b0f1a;
+    --panel:    #111827;
+    --border:   #1e2d45;
+    --accent:   #00d4ff;
+    --accent2:  #00ff99;
+    --warn:     #ff6b35;
+    --text:     #e2e8f0;
+    --muted:    #64748b;
+    --radius:   12px;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Syne', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    padding: 20px 16px 40px;
+  }
+
+  header {
+    text-align: center;
+    margin-bottom: 28px;
+  }
+  header h1 {
+    font-size: 1.6rem;
+    font-weight: 800;
+    letter-spacing: -0.5px;
+    color: var(--accent);
+  }
+  header p {
+    font-size: 0.8rem;
+    color: var(--muted);
+    margin-top: 4px;
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  /* ── Status bar ── */
+  #status-bar {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+  }
+  .badge {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-size: 0.75rem;
+    font-family: 'JetBrains Mono', monospace;
+    border: 1px solid var(--border);
+    background: var(--panel);
+    flex: 1;
+    min-width: 120px;
+    justify-content: center;
+  }
+  .dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: var(--muted);
+    transition: background 0.3s;
+  }
+  .dot.on  { background: var(--accent2); box-shadow: 0 0 6px var(--accent2); }
+  .dot.warn{ background: var(--warn);    box-shadow: 0 0 6px var(--warn); }
+
+  /* ── Cards ── */
+  .card {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 18px;
+    margin-bottom: 14px;
+  }
+  .card-title {
+    font-size: 0.7rem;
+    font-family: 'JetBrains Mono', monospace;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 12px;
+  }
+
+  /* ── Readings grid ── */
+  .readings {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+  .reading {
+    background: var(--bg);
+    border-radius: 8px;
+    padding: 14px 12px;
+    border: 1px solid var(--border);
+  }
+  .reading .label {
+    font-size: 0.65rem;
+    color: var(--muted);
+    font-family: 'JetBrains Mono', monospace;
+    text-transform: uppercase;
+    margin-bottom: 4px;
+  }
+  .reading .value {
+    font-size: 1.6rem;
+    font-weight: 700;
+    font-family: 'JetBrains Mono', monospace;
+    color: var(--accent);
+  }
+  .reading .unit {
+    font-size: 0.8rem;
+    color: var(--muted);
+    margin-left: 2px;
+  }
+  .reading.gps .value { font-size: 0.85rem; color: var(--accent2); }
+
+  /* ── Log ── */
+  #log {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.7rem;
+    color: var(--muted);
+    max-height: 160px;
+    overflow-y: auto;
+    line-height: 1.7;
+  }
+  #log .entry { border-bottom: 1px solid var(--border); padding: 3px 0; }
+  #log .entry.ok   { color: var(--accent2); }
+  #log .entry.err  { color: var(--warn); }
+  #log .entry.info { color: var(--accent); }
+
+  /* ── Buttons ── */
+  .btn-row { display: flex; gap: 10px; flex-wrap: wrap; }
+  button {
+    flex: 1;
+    padding: 13px 10px;
+    border: none;
+    border-radius: 8px;
+    font-family: 'Syne', sans-serif;
+    font-weight: 700;
+    font-size: 0.85rem;
+    cursor: pointer;
+    transition: opacity 0.2s, transform 0.1s;
+  }
+  button:active { transform: scale(0.97); }
+  button:disabled { opacity: 0.35; cursor: not-allowed; }
+
+  #btn-ble   { background: var(--accent);  color: var(--bg); }
+  #btn-gps   { background: var(--accent2); color: var(--bg); }
+  #btn-send  { background: var(--warn);    color: #fff; }
+
+  /* ── Server config ── */
+  input[type=text] {
+    width: 100%;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px 12px;
+    color: var(--text);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.8rem;
+    margin-top: 8px;
+    outline: none;
+  }
+  input[type=text]:focus { border-color: var(--accent); }
+
+  label { font-size: 0.75rem; color: var(--muted); }
+
+  /* ── Auto-send toggle ── */
+  .toggle-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: 12px;
+  }
+  .toggle-row span { font-size: 0.8rem; color: var(--muted); }
+  .switch { position: relative; width: 42px; height: 24px; }
+  .switch input { display: none; }
+  .slider {
+    position: absolute; inset: 0;
+    background: var(--border);
+    border-radius: 24px;
+    cursor: pointer;
+    transition: background 0.3s;
+  }
+  .slider:before {
+    content: '';
+    position: absolute;
+    width: 18px; height: 18px;
+    left: 3px; top: 3px;
+    background: #fff;
+    border-radius: 50%;
+    transition: transform 0.3s;
+  }
+  .switch input:checked + .slider { background: var(--accent2); }
+  .switch input:checked + .slider:before { transform: translateX(18px); }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>⬡ CSS Gateway</h1>
+  <p>BLE → Phone → Server bridge</p>
+</header>
+
+<!-- Status badges -->
+<div id="status-bar">
+  <div class="badge"><div class="dot" id="dot-ble"></div><span id="lbl-ble">BLE off</span></div>
+  <div class="badge"><div class="dot" id="dot-gps"></div><span id="lbl-gps">GPS off</span></div>
+  <div class="badge"><div class="dot" id="dot-srv"></div><span id="lbl-srv">Server —</span></div>
+</div>
+
+<!-- Sensor readings -->
+<div class="card">
+  <div class="card-title">📡 Sensor Readings</div>
+  <div class="readings">
+    <div class="reading">
+      <div class="label">Temperature</div>
+      <div class="value" id="val-temp">—<span class="unit">°C</span></div>
+    </div>
+    <div class="reading">
+      <div class="label">Humidity</div>
+      <div class="value" id="val-hum">—<span class="unit">%</span></div>
+    </div>
+    <div class="reading gps">
+      <div class="label">Latitude</div>
+      <div class="value" id="val-lat">—</div>
+    </div>
+    <div class="reading gps">
+      <div class="label">Longitude</div>
+      <div class="value" id="val-lon">—</div>
+    </div>
+  </div>
+</div>
+
+<!-- Controls -->
+<div class="card">
+  <div class="card-title">🎛 Controls</div>
+  <div class="btn-row">
+    <button id="btn-ble"  onclick="connectBLE()">Connect BLE</button>
+    <button id="btn-gps"  onclick="startGPS()">Enable GPS</button>
+    <button id="btn-send" onclick="sendNow()" disabled>Send Now</button>
+  </div>
+</div>
+
+<!-- Server config -->
+<div class="card">
+  <div class="card-title">🌐 Server Config</div>
+  <label>Endpoint URL</label>
+  <input type="text" id="server-url" value="https://your-server.example.com/api/data"
+         placeholder="https://…/api/data"/>
+  <div class="toggle-row">
+    <span>Auto-send on new reading</span>
+    <label class="switch">
+      <input type="checkbox" id="auto-send" checked/>
+      <span class="slider"></span>
+    </label>
+  </div>
+</div>
+
+<!-- Log -->
+<div class="card">
+  <div class="card-title">📋 Log</div>
+  <div id="log"></div>
+</div>
+
+<script>
+// ── UUIDs — must match esp32_ble_sensor.ino ──────────────────────────────────
+const SERVICE_UUID     = '12345678-1234-1234-1234-1234567890ab';
+const SENSOR_CHAR_UUID = '12345678-1234-1234-1234-1234567890ac';
+const CMD_CHAR_UUID    = '12345678-1234-1234-1234-1234567890ad';
+
+// ── State ────────────────────────────────────────────────────────────────────
+let bleDevice = null, sensorChar = null, cmdChar = null;
+let lastSensorData = null;
+let gpsCoords = null;
+let gpsWatchId = null;
+
+// ── Logging ──────────────────────────────────────────────────────────────────
+function log(msg, type = 'info') {
+  const el = document.getElementById('log');
+  const ts = new Date().toLocaleTimeString();
+  el.innerHTML = `<div class="entry ${type}">[${ts}] ${msg}</div>` + el.innerHTML;
+}
+
+// ── Status dots ──────────────────────────────────────────────────────────────
+function setStatus(id, on, label) {
+  document.getElementById('dot-' + id).className = 'dot ' + (on ? 'on' : (on === false ? 'warn' : ''));
+  document.getElementById('lbl-' + id).textContent = label;
+}
+
+// ── BLE ──────────────────────────────────────────────────────────────────────
+async function connectBLE() {
+  if (!navigator.bluetooth) {
+    log('Web Bluetooth not supported in this browser', 'err');
+    return;
+  }
+  try {
+    log('Scanning for BLE devices…');
+    bleDevice = await navigator.bluetooth.requestDevice({
+      filters: [{ services: [SERVICE_UUID] }]
+    });
+
+    bleDevice.addEventListener('gattserverdisconnected', onBLEDisconnected);
+    log(`Found: ${bleDevice.name}`, 'ok');
+
+    const server  = await bleDevice.gatt.connect();
+    const service = await server.getPrimaryService(SERVICE_UUID);
+
+    sensorChar = await service.getCharacteristic(SENSOR_CHAR_UUID);
+    cmdChar    = await service.getCharacteristic(CMD_CHAR_UUID);
+
+    // Subscribe to notifications
+    await sensorChar.startNotifications();
+    sensorChar.addEventListener('characteristicvaluechanged', onSensorData);
+
+    setStatus('ble', true, bleDevice.name || 'Connected');
+    document.getElementById('btn-send').disabled = false;
+    log('BLE connected — notifications active', 'ok');
+
+  } catch (err) {
+    log(`BLE error: ${err.message}`, 'err');
+    setStatus('ble', false, 'BLE error');
+  }
+}
+
+function onBLEDisconnected() {
+  setStatus('ble', false, 'Disconnected');
+  document.getElementById('btn-send').disabled = true;
+  log('BLE disconnected', 'err');
+}
+
+// ── Parse incoming BLE notification ─────────────────────────────────────────
+function onSensorData(event) {
+  const raw = new TextDecoder().decode(event.target.value);
+  log(`BLE ← ${raw}`);
+
+  try {
+    const parsed = JSON.parse(raw);
+    lastSensorData = parsed;
+
+    // Update UI
+    document.getElementById('val-temp').innerHTML =
+      parsed.t.toFixed(2) + '<span class="unit">°C</span>';
+    document.getElementById('val-hum').innerHTML  =
+      parsed.h.toFixed(2) + '<span class="unit">%</span>';
+
+    if (document.getElementById('auto-send').checked) sendNow();
+
+  } catch(e) {
+    log(`Parse error: ${e.message}`, 'err');
+  }
+}
+
+// ── GPS ──────────────────────────────────────────────────────────────────────
+function startGPS() {
+  if (!navigator.geolocation) {
+    log('Geolocation not available', 'err');
+    return;
+  }
+  if (gpsWatchId !== null) {
+    navigator.geolocation.clearWatch(gpsWatchId);
+  }
+  gpsWatchId = navigator.geolocation.watchPosition(
+    pos => {
+      gpsCoords = { lat: pos.coords.latitude, lon: pos.coords.longitude,
+                    acc: pos.coords.accuracy };
+      document.getElementById('val-lat').textContent = gpsCoords.lat.toFixed(5);
+      document.getElementById('val-lon').textContent = gpsCoords.lon.toFixed(5);
+      setStatus('gps', true, `±${Math.round(gpsCoords.acc)}m`);
+    },
+    err => {
+      log(`GPS error: ${err.message}`, 'err');
+      setStatus('gps', false, 'GPS error');
+    },
+    { enableHighAccuracy: true, maximumAge: 10000 }
+  );
+  log('GPS watch started', 'ok');
+}
+
+// ── Build enriched payload ───────────────────────────────────────────────────
+function buildPayload() {
+  return {
+    sensor:    lastSensorData,              // { t, h, ms } from ESP32
+    gps:       gpsCoords,                   // { lat, lon, acc } from phone
+    phone_ts:  new Date().toISOString(),    // phone wall-clock time
+    device_id: bleDevice?.name ?? 'unknown'
+  };
+}
+
+// ── Send to server ────────────────────────────────────────────────────────────
+async function sendNow() {
+  if (!lastSensorData) { log('No sensor data yet', 'err'); return; }
+
+  const url     = document.getElementById('server-url').value.trim();
+  const payload = buildPayload();
+
+  log(`→ POST ${url}`);
+  setStatus('srv', null, 'Sending…');
+
+  try {
+    const res = await fetch(url, {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify(payload)
+    });
+    if (res.ok) {
+      setStatus('srv', true, `${res.status} OK`);
+      log(`Server replied ${res.status}`, 'ok');
+    } else {
+      setStatus('srv', false, `${res.status} ERR`);
+      log(`Server error ${res.status}`, 'err');
+    }
+  } catch(err) {
+    setStatus('srv', false, 'Unreachable');
+    log(`Fetch failed: ${err.message}`, 'err');
+  }
+}
+
+// ── Optional: send a command to the ESP32 ───────────────────────────────────
+async function sendCommand(cmd) {
+  if (!cmdChar) return;
+  const enc = new TextEncoder().encode(cmd);
+  await cmdChar.writeValue(enc);
+  log(`→ CMD: ${cmd}`, 'info');
+}
+
+log('Ready — connect BLE to start', 'info');
+</script>
+</body>
+</html>
