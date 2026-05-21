@@ -1,0 +1,182 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Digital Twin Simulation Workshop</title>
+        <script src="https://cdn.tailwindcss.com"></script>
+        <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
+    </head>
+    <body class="bg-gray-100 font-sans p-6">
+        <div class="max-w-4xl mx-auto">
+            <header class="mb-8 text-center">
+                <h1 class="text-3xl font-bold text-gray-800">
+                    IoT Digital Twin Simulator
+                </h1>
+                <p class="text-gray-600">
+                    Predictive Simulation & Parameter Optimization Workshop
+                </p>
+            </header>
+
+            <div class="bg-white p-6 rounded-lg shadow-md mb-6">
+                <h2 class="text-xl font-semibold mb-4 text-gray-700">
+                    1. Setup Workshop Room
+                </h2>
+                <div class="flex gap-4 items-center">
+                    <input
+                        type="text"
+                        id="roomId"
+                        value="room123"
+                        class="border p-2 rounded w-48 font-mono text-center bg-gray-50"
+                        placeholder="e.g., room404"
+                    />
+                    <button
+                        onclick="initializeTwin()"
+                        id="connectBtn"
+                        class="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700 font-medium"
+                    >
+                        Connect Twin
+                    </button>
+                    <span
+                        id="connectionStatus"
+                        class="text-sm font-semibold text-red-500"
+                        >Disconnected</span
+                    >
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div class="bg-white p-6 rounded-lg shadow-md">
+                    <h2 class="text-xl font-semibold mb-4 text-gray-700">
+                        2. Physical Device Twin
+                    </h2>
+                    <div
+                        class="flex flex-col items-center justify-center p-6 bg-gray-50 rounded-lg border border-dashed border-gray-300"
+                    >
+                        <span
+                            class="text-sm text-gray-500 uppercase tracking-wider font-semibold"
+                            >Current Temperature</span
+                        >
+                        <span
+                            id="liveTemp"
+                            class="text-5xl font-black text-gray-800 my-2"
+                            >--.-°C</span
+                        >
+                        <span
+                            id="liveMode"
+                            class="text-sm px-3 py-1 rounded-full bg-gray-200 text-gray-700 font-medium"
+                            >Mode: Unknown</span
+                        >
+                    </div>
+
+                    <div class="mt-6">
+                        <label
+                            class="block text-sm font-medium text-gray-700 mb-2"
+                            >Set New Target Temperature (°C)</label
+                        >
+                        <div class="flex gap-2">
+                            <input
+                                type="number"
+                                id="targetInput"
+                                value="35"
+                                min="20"
+                                max="60"
+                                class="border p-2 rounded w-full"
+                            />
+                            <button
+                                onclick="runWhatIfSimulation()"
+                                class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 font-medium whitespace-nowrap"
+                            >
+                                Run Simulation
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-white p-6 rounded-lg shadow-md">
+                    <h2 class="text-xl font-semibold mb-4 text-gray-700">
+                        3. "What-If" Simulation Models
+                    </h2>
+
+                    <div class="space-y-4">
+                        <div
+                            id="modelEcoBox"
+                            class="p-4 rounded-lg border border-gray-200 bg-gray-50"
+                        >
+                            <div class="flex justify-between items-center mb-2">
+                                <span class="font-bold text-green-700"
+                                    >Model A: ECO Mode</span
+                                >
+                                <span
+                                    id="ecoTime"
+                                    class="text-sm text-gray-600 font-mono"
+                                    >Time: --s</span
+                                >
+                            </div>
+                            <div
+                                class="w-full bg-gray-200 h-2 rounded-full overflow-hidden"
+                            >
+                                <div
+                                    id="ecoBar"
+                                    class="bg-green-500 h-full w-0 transition-all duration-500"
+                                ></div>
+                            </div>
+                            <p
+                                id="ecoEnergy"
+                                class="text-xs text-gray-500 mt-1"
+                            >
+                                Est. Energy: -- Wh
+                            </p>
+                        </div>
+
+                        <div
+                            id="modelBoostBox"
+                            class="p-4 rounded-lg border border-gray-200 bg-gray-50"
+                        >
+                            <div class="flex justify-between items-center mb-2">
+                                <span class="font-bold text-orange-700"
+                                    >Model B: BOOST Mode</span
+                                >
+                                <span
+                                    id="boostTime"
+                                    class="text-sm text-gray-600 font-mono"
+                                    >Time: --s</span
+                                >
+                            </div>
+                            <div
+                                class="w-full bg-gray-200 h-2 rounded-full overflow-hidden"
+                            >
+                                <div
+                                    id="boostBar"
+                                    class="bg-orange-500 h-full w-0 transition-all duration-500"
+                                ></div>
+                            </div>
+                            <p
+                                id="boostEnergy"
+                                class="text-xs text-gray-500 mt-1"
+                            >
+                                Est. Energy: -- Wh
+                            </p>
+                        </div>
+                    </div>
+
+                    <div
+                        class="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg hidden"
+                        id="decisionBox"
+                    >
+                        <h3
+                            class="font-bold text-blue-800 text-sm uppercase tracking-wider"
+                        >
+                            Twin Optimizer Decision
+                        </h3>
+                        <p class="text-gray-700 text-sm mt-1" id="decisionText">
+                            Analyzing best parameters...
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <script src="DT.js"></script>
+    </body>
+</html>
