@@ -18,6 +18,13 @@
                 </p>
             </header>
 
+             <div class="bg-white p-6 rounded-lg shadow-md mb-6">
+                <h2 class="text-xl font-semibold mb-4 text-gray-700">
+                    mosquitto_pub -h public.cloud.shiftr.io -p 8883 -u 'public' -P 'public' -t 'workshop/room123/telemetry' -m '{"temperature": 21.5, "heaterMode": 0}'
+
+                </h2>
+            </div>
+
             <div class="bg-white p-6 rounded-lg shadow-md mb-6">
                 <h2 class="text-xl font-semibold mb-4 text-gray-700">
                     1. Setup Workshop Room
