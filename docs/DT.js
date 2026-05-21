@@ -13,13 +13,39 @@ function initializeTwin() {
   statusText.innerText = "Connecting...";
   statusText.className = "text-sm font-semibold text-yellow-600";
 
-  var client = mqtt.connect('wss://test.mosquitto.org:443/mqtt');
-  // Use port 8884 for secure connections (wss)
-  // client = mqtt.connect("wss://broker.hivemq.com:8884/mqtt");
-  // Use port 8000 with ws:// instead of wss://
-  //client = mqtt.connect('ws://broker.hivemq.com:8000/mqtt');
-  // Connect to HiveMQ Public MQTT Broker via WebSockets
-  //client = mqtt.connect("wss://broker.hivemq.com:8000/mqtt");
+  ////// emqx. Works in both basic WS and TLS WS:
+// const broker = 'wss://broker.emqx.io:8084/mqtt'
+// const broker = 'ws://broker.emqx.io:8083/mqtt'
+
+//////// shiftr.io desktop client. 
+// Fill in your desktop IP address for localhost:
+// const broker = 'ws://localhost:1884';     
+
+//////// shiftr.io, requires username and password 
+// (see options variable below):
+const broker = 'wss://public.cloud.shiftr.io';
+
+//////// test.mosquitto.org, uses no username and password:
+// const broker = 'wss://test.mosquitto.org:8081';
+
+// MQTT client:
+let client;
+
+// connection options:
+let options = {
+  // Clean session
+  clean: true,
+  // connect timeout in ms:
+  connectTimeout: 10000,
+  // Authentication
+  // add a random number for a unique client ID:
+  clientId: 'mqttJsClient-' + Math.floor(Math.random() * 1000000),
+  // add these in for public.cloud.shiftr.io:
+  username: 'public',
+  password: 'public'
+}
+
+  client = mqtt.connect(broker, options);
 
   client.on("connect", () => {
     statusText.innerText = "Connected";
