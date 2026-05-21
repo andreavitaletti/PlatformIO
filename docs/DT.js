@@ -13,8 +13,12 @@ function initializeTwin() {
   statusText.innerText = "Connecting...";
   statusText.className = "text-sm font-semibold text-yellow-600";
 
+  // Use port 8884 for secure connections (wss)
+  client = mqtt.connect("wss://broker.hivemq.com:8884/mqtt");
+  // Use port 8000 with ws:// instead of wss://
+  //client = mqtt.connect('ws://broker.hivemq.com:8000/mqtt');
   // Connect to HiveMQ Public MQTT Broker via WebSockets
-  client = mqtt.connect("wss://broker.hivemq.com:8000/mqtt");
+  //client = mqtt.connect("wss://broker.hivemq.com:8000/mqtt");
 
   client.on("connect", () => {
     statusText.innerText = "Connected";
