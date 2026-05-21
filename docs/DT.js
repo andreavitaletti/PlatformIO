@@ -12,7 +12,7 @@ function initializeTwin() {
   const statusText = document.getElementById("connectionStatus");
   statusText.innerText = "Connecting...";
   statusText.className = "text-sm font-semibold text-yellow-600";
-  client = mqtt.connect("wss://mqtt-dashboard.com:8084"); 
+  client = mqtt.connect("wss://mqtt-dashboard.com:8084/mqtt"); 
   // Use port 8884 for secure connections (wss)
   // client = mqtt.connect("wss://broker.hivemq.com:8884/mqtt");
   // Use port 8000 with ws:// instead of wss://
