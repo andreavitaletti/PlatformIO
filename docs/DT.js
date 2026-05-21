@@ -14,36 +14,33 @@ function initializeTwin() {
   statusText.className = "text-sm font-semibold text-yellow-600";
 
   ////// emqx. Works in both basic WS and TLS WS:
-// const broker = 'wss://broker.emqx.io:8084/mqtt'
-// const broker = 'ws://broker.emqx.io:8083/mqtt'
+  // const broker = 'wss://broker.emqx.io:8084/mqtt'
+  // const broker = 'ws://broker.emqx.io:8083/mqtt'
 
-//////// shiftr.io desktop client. 
-// Fill in your desktop IP address for localhost:
-// const broker = 'ws://localhost:1884';     
+  //////// shiftr.io desktop client. 
+  // Fill in your desktop IP address for localhost:
+  // const broker = 'ws://localhost:1884';     
 
-//////// shiftr.io, requires username and password 
-// (see options variable below):
-const broker = 'wss://public.cloud.shiftr.io';
+  //////// shiftr.io, requires username and password 
+  // (see options variable below):
+  const broker = 'wss://public.cloud.shiftr.io';
 
-//////// test.mosquitto.org, uses no username and password:
-// const broker = 'wss://test.mosquitto.org:8081';
+  //////// test.mosquitto.org, uses no username and password:
+  // const broker = 'wss://test.mosquitto.org:8081';
 
-// MQTT client:
-let client;
-
-// connection options:
-let options = {
-  // Clean session
-  clean: true,
-  // connect timeout in ms:
-  connectTimeout: 10000,
-  // Authentication
-  // add a random number for a unique client ID:
-  clientId: 'mqttJsClient-' + Math.floor(Math.random() * 1000000),
-  // add these in for public.cloud.shiftr.io:
-  username: 'public',
-  password: 'public'
-}
+  // connection options:
+  let options = {
+    // Clean session
+    clean: true,
+    // connect timeout in ms:
+    connectTimeout: 10000,
+    // Authentication
+    // add a random number for a unique client ID:
+    clientId: 'mqttJsClient-' + Math.floor(Math.random() * 1000000),
+    // add these in for public.cloud.shiftr.io:
+    username: 'public',
+    password: 'public'
+  }
 
   client = mqtt.connect(broker, options);
 
