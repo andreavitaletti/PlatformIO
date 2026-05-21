@@ -1,0 +1,140 @@
+<!doctype html>
+<html lang="it">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Digital Twin Avanzato - Predictive Control</title>
+        <script src="https://cdn.tailwindcss.com"></script>
+        <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    </head>
+    <body class="bg-slate-900 text-slate-100 font-sans p-6">
+        <div class="max-w-6xl mx-auto">
+            <header class="mb-6 border-b border-slate-700 pb-4">
+                <h1 class="text-3xl font-extrabold text-blue-400">
+                    Gemello Digitale Predittivo v2.0
+                </h1>
+                <p class="text-slate-400 text-sm">
+                    Workshop di Ottimizzazione Parametrica in Tempo Reale via
+                    WebSockets
+                </p>
+            </header>
+
+            <div
+                class="bg-slate-800 p-4 rounded-xl border border-slate-700 mb-6 flex flex-wrap gap-4 items-center justify-between"
+            >
+                <div class="flex items-center gap-3">
+                    <label class="font-mono text-sm text-slate-400"
+                        >ROOM ID:</label
+                    >
+                    <input
+                        type="text"
+                        id="roomId"
+                        value="incubator_labs"
+                        class="bg-slate-900 border border-slate-600 rounded px-3 py-1 font-mono text-blue-300 w-48 text-center"
+                    />
+                    <button
+                        onclick="initializeTwin()"
+                        id="connectBtn"
+                        class="bg-blue-600 hover:bg-blue-500 text-white px-4 py-1.0 rounded font-medium text-sm transition"
+                    >
+                        Inizializza Twin
+                    </button>
+                </div>
+                <div class="text-sm font-mono">
+                    Stato:
+                    <span id="connectionStatus" class="text-red-400 font-bold"
+                        >DISCONNESSO</span
+                    >
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <div
+                    class="bg-slate-800 p-6 rounded-xl border border-slate-700 flex flex-col justify-between"
+                >
+                    <div>
+                        <h2
+                            class="text-xl font-bold mb-4 text-slate-300 border-b border-slate-700 pb-2"
+                        >
+                            📡 Stato Edge Device
+                        </h2>
+                        <div
+                            class="bg-slate-950 p-6 rounded-lg text-center my-4 border border-slate-800"
+                        >
+                            <span
+                                class="text-xs text-slate-500 font-mono block uppercase"
+                                >Temperatura Attuale</span
+                            >
+                            <span
+                                id="liveTemp"
+                                class="text-5xl font-black font-mono text-emerald-400 my-2 block"
+                                >--.-°C</span
+                            >
+                            <span
+                                id="liveMode"
+                                class="text-xs font-mono inline-block px-3 py-1 rounded bg-slate-800 text-slate-400 border border-slate-700"
+                                >Profilo: Attesa...</span
+                            >
+                        </div>
+                    </div>
+
+                    <div class="mt-4">
+                        <label
+                            class="block text-xs font-mono text-slate-400 mb-2"
+                            >Nuovo Target Termico (°C):</label
+                        >
+                        <div class="flex gap-2">
+                            <input
+                                type="number"
+                                id="targetInput"
+                                value="42"
+                                min="20"
+                                max="60"
+                                class="bg-slate-950 border border-slate-700 rounded p-2 w-full font-mono text-emerald-400 text-center text-lg"
+                            />
+                            <button
+                                onclick="runPredictiveSimulation()"
+                                class="bg-emerald-600 hover:bg-emerald-500 text-white px-4 py-2 rounded font-semibold text-sm transition whitespace-nowrap"
+                            >
+                                Simula & Ottimizza
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div
+                    class="bg-slate-800 p-6 rounded-xl border border-slate-700 lg:col-span-2"
+                >
+                    <h2
+                        class="text-xl font-bold mb-2 text-slate-300 border-b border-slate-700 pb-2"
+                    >
+                        🔮 Traiettorie Predittive (What-If)
+                    </h2>
+                    <div
+                        class="h-64 w-full bg-slate-950 rounded-lg p-2 border border-slate-800"
+                    >
+                        <canvas id="simulationChart"></canvas>
+                    </div>
+
+                    <div
+                        class="mt-4 p-4 bg-blue-950/40 border border-blue-800/60 rounded-lg hidden"
+                        id="decisionBox"
+                    >
+                        <div
+                            class="flex items-center gap-2 text-blue-400 font-bold text-xs font-mono uppercase"
+                        >
+                            <span>🤖 Ottimizzatore Digitale</span>
+                        </div>
+                        <p
+                            class="text-slate-300 text-sm mt-1 font-sans"
+                            id="decisionText"
+                        ></p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <script src="DT1.js"></script>
+    </body>
+</html>
