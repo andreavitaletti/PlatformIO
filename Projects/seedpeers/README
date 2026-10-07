@@ -1,0 +1,4 @@
+pio run -e esp32dev
+pio run -e esp32dev -t upload
+
+pio run -e RemoteXY -t upload
