@@ -1,0 +1,6 @@
+{
+  "name": "D4184-mosfet",
+  "author": "",
+  "pins": ["SIG", "GND_IN", "V_PLUS", "V_MINUS", "OUT_PLUS", "OUT_MINUS"],
+  "controls": []
+}
