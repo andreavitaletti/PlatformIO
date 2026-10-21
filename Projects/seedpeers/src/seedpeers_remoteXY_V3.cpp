@@ -31,7 +31,7 @@
 #include <BLEDevice.h>
 
 // RemoteXY connection settings
-#define REMOTEXY_BLUETOOTH_NAME "RemoteXY"
+#define REMOTEXY_BLUETOOTH_NAME "SeedPeers-Coke"
 
 
 #include <RemoteXY.h>
